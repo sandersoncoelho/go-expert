@@ -33,31 +33,35 @@ type CotacaoMux struct {
 	DB *sql.DB
 }
 
-func handleError(err error) {
+func handleError(err error, msg *string) {
 	if err != nil {
-		log.Fatal(err)
+		if msg != nil {
+			println(*msg)
+		}
+		panic(*msg)
 	}
 }
 
 func getCotacao() Cotacao {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Second * 5)
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 200)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
-	handleError(err)
+	handleError(err, nil)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
-	handleError(err)
+	msg := "Erro na requesição para economia.awesomeapi.com.br"
+	handleError(err, &msg)
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	handleError(err)
+	handleError(err, nil)
 
 	var cotacao Cotacao
 	err = json.Unmarshal(body, &cotacao)
-	handleError(err)
+	handleError(err, nil)
 	return cotacao
 }
 
@@ -67,17 +71,18 @@ func (cotacaoMux CotacaoMux) persistCotacao(cotacao Cotacao) {
 	defer cancel()
 
 	tx, err := cotacaoMux.DB.BeginTx(ctx, nil)
-	handleError(err)
+	handleError(err, nil)
 
 	stmt, err := tx.Prepare("insert into COTACAO(BID) values(?)")
-	handleError(err)
+	msg := "Erro ao persisti no banco de dados"
+	handleError(err, &msg)
 	defer stmt.Close()
 
 	_, err = stmt.Exec(cotacao.USDBRL.Bid)
-	handleError(err)
+	handleError(err, nil)
 
 	err = tx.Commit()
-	handleError(err)
+	handleError(err, nil)
 }
 
 func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -88,13 +93,26 @@ func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"bid\": %s}", cotacao.USDBRL.Bid)
 }
 
+func recoverMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				http.Error(w, r.(string), http.StatusInternalServerError)
+			}
+		}()
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main()  {
 	db, err := sql.Open("sqlite3", "./cotacao.db")
-	handleError(err)
+	msg := "Falha ao conectar com o banco de dados"
+	handleError(err, &msg)
 	defer db.Close()
 
 	mux := http.NewServeMux()
 	mux.Handle("/cotacao", CotacaoMux{DB: db})
 
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(http.ListenAndServe(":8080", recoverMiddleware(mux)))
 }

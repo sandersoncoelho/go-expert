@@ -32,7 +32,7 @@ func writeData(cotacao Cotacao) {
 
 func main() {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Second * 5)
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 3000)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:8080/cotacao", nil)
@@ -45,6 +45,10 @@ func main() {
 
 	body, err := io.ReadAll(resp.Body)
 	handleError(err)
+
+	if resp.StatusCode == http.StatusInternalServerError {
+		log.Fatal(string(body))
+	}
 
 	var cotacao Cotacao
 	err = json.Unmarshal(body, &cotacao)
