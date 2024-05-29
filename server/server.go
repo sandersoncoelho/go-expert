@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -37,8 +39,16 @@ func handleError(err error) {
 	}
 }
 
-func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resp, err := http.Get("https://economia.awesomeapi.com.br/json/last/USD-BRL")
+func getCotacao() Cotacao {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second * 5)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
+	handleError(err)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	handleError(err)
 	defer resp.Body.Close()
 
@@ -48,9 +58,15 @@ func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cotacao Cotacao
 	err = json.Unmarshal(body, &cotacao)
 	handleError(err)
+	return cotacao
+}
 
+func (cotacaoMux CotacaoMux) persistCotacao(cotacao Cotacao) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 10)
+	defer cancel()
 
-	tx, err := cotacaoMux.DB.Begin()
+	tx, err := cotacaoMux.DB.BeginTx(ctx, nil)
 	handleError(err)
 
 	stmt, err := tx.Prepare("insert into COTACAO(BID) values(?)")
@@ -62,8 +78,13 @@ func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Commit()
 	handleError(err)
-	
+}
 
+func (cotacaoMux CotacaoMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	cotacao := getCotacao()
+
+	cotacaoMux.persistCotacao(cotacao)
+	
 	fmt.Fprintf(w, "{\"bid\": %s}", cotacao.USDBRL.Bid)
 }
 
