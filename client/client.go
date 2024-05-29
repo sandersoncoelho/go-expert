@@ -2,20 +2,33 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
 type Cotacao struct {
-	valor float64
+	Bid float64 `json:"bid"`
 }
 
 func handleError(err error) {
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
+
+func writeData(cotacao Cotacao) {
+	file, err := os.OpenFile("cotacao.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	handleError(err)
+	defer file.Close()
+
+	_, err = file.WriteString(fmt.Sprintf("Dólar:%f\n", cotacao.Bid))
+	handleError(err)
+ }
 
 func main() {
 	ctx := context.Background()
@@ -32,5 +45,10 @@ func main() {
 
 	body, err := io.ReadAll(resp.Body)
 	handleError(err)
-	println(string(body))
+
+	var cotacao Cotacao
+	err = json.Unmarshal(body, &cotacao)
+	handleError(err)
+
+	writeData(cotacao)
 }
