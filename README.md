@@ -8,8 +8,8 @@ In this example it was used some concepts such as: http, context, json, panic re
 
 ## Versions
 
-Go: 1.22.1
-SQLite3: 3.42.0
+- Go: 1.22.1
+- SQLite3: 3.42.0
 
 ## Database
 
