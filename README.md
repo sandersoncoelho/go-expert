@@ -15,13 +15,17 @@ SQLite3: 3.42.0
 
 The database cotacao.db was commited empty and It was created as follow:
 
-> $ sqlite3 cotacao.db
-> $ sqlite> CREATE TABLE COTACAO(ID INTEGER PRIMARY KEY AUTOINCREMENT, BID REAL);
+```
+$ sqlite3 cotacao.db
+$ sqlite> CREATE TABLE COTACAO(ID INTEGER PRIMARY KEY AUTOINCREMENT, BID REAL);
+```
 
 ## Running the applications
 
-> ~/go-expert go run server/server.go
-> ~/go-expert go run client/client.go
+```
+~/go-expert go run server/server.go
+~/go-expert go run client/client.go
+```
 
 ## Comments
 
