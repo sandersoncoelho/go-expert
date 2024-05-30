@@ -74,7 +74,7 @@ func (cotacaoMux CotacaoMux) persistCotacao(cotacao Cotacao) {
 	handleError(err, nil)
 
 	stmt, err := tx.Prepare("insert into COTACAO(BID) values(?)")
-	msg := "Erro ao persisti no banco de dados"
+	msg := "Erro ao persistir no banco de dados"
 	handleError(err, &msg)
 	defer stmt.Close()
 
