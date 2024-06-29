@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/sandersoncoelho/go-expert/multithreading/internal/entity"
 )
 
@@ -17,11 +18,17 @@ func NewCepHandler() *CepHandler {
 }
 
 func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
+	cep := chi.URLParam(r, "cep")
+	if cep == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://brasilapi.com.br/api/cep/v1/01153000", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://brasilapi.com.br/api/cep/v1/" + cep, nil)
 	handleError(err, nil)
 	req.Header.Set("Accept", "application/json")
 
