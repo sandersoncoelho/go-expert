@@ -45,7 +45,7 @@ func getCepBrasilApi(cep string, w http.ResponseWriter) {
 
 func getCepViaCep(cep string, w http.ResponseWriter) {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Minute * 10)
+	ctx, cancel := context.WithTimeout(ctx, time.Second * 1)
 	defer cancel()
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://viacep.com.br/ws/" + cep + "/json/", nil)
@@ -75,9 +75,31 @@ func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	c1 := make(chan int)
+	c2 := make(chan int)
+
+	go func() {
+		getCepBrasilApi(cep, w)
+		c1 <- 1
+	}()
+
+	go func() {
+		getCepViaCep(cep, w)
+		c2 <- 2
+	}()
+
+	select {
+	case <- c1:
+		println("brasilapi")
+	case <- c2:
+		println("viacep")
+	case <- time.After(time.Second):
+		println("timeout")
+	}
 	
-	//getCepBrasilApi(cep, w)
-	getCepViaCep(cep, w)
+	
+	
 }
 
 func handleError(err error, msg *string) {
