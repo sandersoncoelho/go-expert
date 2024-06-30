@@ -17,7 +17,7 @@ func NewCepHandler() *CepHandler {
 	return &CepHandler{}
 }
 
-func getCepBrasilApi(cep string, w http.ResponseWriter) {
+func getCepBrasilApi(cep string) entity.CepBrasilApi {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -34,18 +34,16 @@ func getCepBrasilApi(cep string, w http.ResponseWriter) {
 	body, err := io.ReadAll(resp.Body)
 	handleError(err, nil)
 
-	var cepInput entity.CepBrasilApi
-	err = json.Unmarshal(body, &cepInput)
+	var cepResponse entity.CepBrasilApi
+	err = json.Unmarshal(body, &cepResponse)
 	handleError(err, nil)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(cepInput)
+	return cepResponse
 }
 
-func getCepViaCep(cep string, w http.ResponseWriter) {
+func getCepViaCep(cep string) entity.CepViaCep {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Second * 1)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://viacep.com.br/ws/" + cep + "/json/", nil)
@@ -64,9 +62,7 @@ func getCepViaCep(cep string, w http.ResponseWriter) {
 	err = json.Unmarshal(body, &cepResponse)
 	handleError(err, nil)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(cepResponse)
+	return cepResponse
 }
 
 func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
@@ -76,30 +72,35 @@ func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c1 := make(chan int)
-	c2 := make(chan int)
+	c1 := make(chan any)
+	c2 := make(chan any)
 
 	go func() {
-		getCepBrasilApi(cep, w)
-		c1 <- 1
+		c1 <- getCepBrasilApi(cep)
 	}()
 
 	go func() {
-		getCepViaCep(cep, w)
-		c2 <- 2
+		c2 <- getCepViaCep(cep)
 	}()
 
 	select {
-	case <- c1:
+	case cepResponse := <- c1:
 		println("brasilapi")
-	case <- c2:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(entity.CepResponse{ServiceName: "brasilapi", Data: cepResponse})
+
+	case cepResponse := <- c2:
 		println("viacep")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(entity.CepResponse{ServiceName: "viacep", Data: cepResponse})
+
 	case <- time.After(time.Second):
 		println("timeout")
+		w.WriteHeader(http.StatusRequestTimeout)
+		w.Write([]byte("Request timeout\n"))
 	}
-	
-	
-	
 }
 
 func handleError(err error, msg *string) {

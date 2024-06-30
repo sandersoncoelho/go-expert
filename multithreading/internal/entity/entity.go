@@ -20,4 +20,9 @@ type CepViaCep struct {
 	Gia string `json:"gia"`
 	Ddd string `json:"ddd"`
 	Siafi string `json:"siafi"`
-  }
+}
+
+type CepResponse struct {
+	ServiceName string `json:"serviceName"`
+	Data any `json:"data"`
+}
