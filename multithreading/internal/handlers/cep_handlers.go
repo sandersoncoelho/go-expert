@@ -17,13 +17,7 @@ func NewCepHandler() *CepHandler {
 	return &CepHandler{}
 }
 
-func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
-	cep := chi.URLParam(r, "cep")
-	if cep == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	
+func getCepBrasilApi(cep string, w http.ResponseWriter) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -33,7 +27,7 @@ func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
-	msg := "Erro na requesição para economia.awesomeapi.com.br"
+	msg := "Erro na requesição para brasilapi"
 	handleError(err, &msg)
 	defer resp.Body.Close()
 
@@ -47,6 +41,43 @@ func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(cepInput)
+}
+
+func getCepViaCep(cep string, w http.ResponseWriter) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute * 10)
+	defer cancel()
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://viacep.com.br/ws/" + cep + "/json/", nil)
+	handleError(err, nil)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	msg := "Erro na requesição para viacep"
+	handleError(err, &msg)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	handleError(err, nil)
+
+	var cepResponse entity.CepViaCep
+	err = json.Unmarshal(body, &cepResponse)
+	handleError(err, nil)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(cepResponse)
+}
+
+func (h *CepHandler) GetCep(w http.ResponseWriter, r *http.Request) {
+	cep := chi.URLParam(r, "cep")
+	if cep == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	
+	//getCepBrasilApi(cep, w)
+	getCepViaCep(cep, w)
 }
 
 func handleError(err error, msg *string) {
