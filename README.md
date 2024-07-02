@@ -1,6 +1,9 @@
 # Go-expert
 
-This repository contains implementations for challenges proposed at the go-expert postgraduate. The challenges are named as Client-Server-API, Multithreading.
+This repository contains implementations for challenges proposed at the go-expert postgraduate. The challenges are named as:
+
+- [Client-Server-API](#client-server-api)
+- [Multithreading](#multithreading)
 
 ## Versions
 
