@@ -44,7 +44,7 @@ func handleError(err error, msg *string) {
 
 func getCotacao() Cotacao {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 200)
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 2000)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)

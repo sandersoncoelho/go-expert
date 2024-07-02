@@ -32,7 +32,7 @@ func writeData(cotacao Cotacao) {
 
 func main() {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 300)
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond * 3000)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:8080/cotacao", nil)
