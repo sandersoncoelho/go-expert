@@ -61,11 +61,21 @@ func (c *CreateOrderUseCase) Create(input OrderInputDTO) (OrderOutputDTO, error)
 }
 
 func (c * CreateOrderUseCase) List() ([]OrderOutputDTO, error) {
-	order := OrderOutputDTO{
-		ID: "asdf",
-		Price: 12.2,
-		Tax: 34.4,
-		FinalPrice: 45.3,
+	orders, err := c.OrderRepository.List()
+
+	if err != nil {
+		return nil, err
 	}
-	return []OrderOutputDTO{order}, nil
+
+	ordersDTO := make([]OrderOutputDTO, len(orders))
+	for i, order := range orders {
+		ordersDTO[i] = OrderOutputDTO{
+			ID: order.ID,
+			Price: order.Price,
+			Tax: order.Tax,
+			FinalPrice: order.FinalPrice,
+		}
+	}
+	
+	return ordersDTO, nil
 }
