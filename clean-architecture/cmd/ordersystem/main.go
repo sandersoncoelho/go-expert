@@ -15,6 +15,7 @@ import (
 	"github.com/devfullcycle/20-CleanArch/internal/infra/grpc/service"
 	"github.com/devfullcycle/20-CleanArch/internal/infra/web/webserver"
 	"github.com/devfullcycle/20-CleanArch/pkg/events"
+	"github.com/go-chi/chi/v5"
 	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -46,7 +47,10 @@ func main() {
 
 	webserver := webserver.NewWebServer(configs.WebServerPort)
 	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
-	webserver.AddHandler("/order", webOrderHandler.Create)
+	webserver.AddRoute("/order", func(r chi.Router) {
+		r.Post("/", webOrderHandler.Create)
+		r.Get("/", webOrderHandler.List)
+	})
 	fmt.Println("Starting web server on port", configs.WebServerPort)
 	go webserver.Start()
 

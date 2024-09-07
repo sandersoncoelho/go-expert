@@ -36,7 +36,7 @@ func NewCreateOrderUseCase(
 	}
 }
 
-func (c *CreateOrderUseCase) Execute(input OrderInputDTO) (OrderOutputDTO, error) {
+func (c *CreateOrderUseCase) Create(input OrderInputDTO) (OrderOutputDTO, error) {
 	order := entity.Order{
 		ID:    input.ID,
 		Price: input.Price,
@@ -58,4 +58,14 @@ func (c *CreateOrderUseCase) Execute(input OrderInputDTO) (OrderOutputDTO, error
 	c.EventDispatcher.Dispatch(c.OrderCreated)
 
 	return dto, nil
+}
+
+func (c * CreateOrderUseCase) List() ([]OrderOutputDTO, error) {
+	order := OrderOutputDTO{
+		ID: "asdf",
+		Price: 12.2,
+		Tax: 34.4,
+		FinalPrice: 45.3,
+	}
+	return []OrderOutputDTO{order}, nil
 }
