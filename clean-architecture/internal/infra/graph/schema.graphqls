@@ -16,5 +16,5 @@ type Mutation {
 }
 
 type Query {
-  getOrders: [Order]
+  listOrders: [Order]
 }
