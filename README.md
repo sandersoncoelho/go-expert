@@ -4,6 +4,7 @@ This repository contains implementations for challenges proposed at the go-exper
 
 - [Client-Server-API](#client-server-api)
 - [Multithreading](#multithreading)
+- [Clean-Architecture](https://github.com/sandersoncoelho/go-expert/tree/master/clean-architecture)
 
 ## Versions
 
