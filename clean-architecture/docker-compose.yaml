@@ -3,6 +3,10 @@ version: "3"
 services:
   mysql:
     image: mysql:5.7
+    networks:
+      new:
+        aliases:
+          - database
     container_name: mysql
     restart: always
     environment:
@@ -13,14 +17,33 @@ services:
       - 3306:3306
     volumes:
       - .docker/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 30s
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: always
-    ports:
-      - 5672:5672
-      - 15672:15672
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+  migrate:
+    image: migrate/migrate
+    networks:
+      new:
+    volumes:
+      - ./sql/migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "mysql://root:root@tcp(database:3306)/orders",
+        "up",
+        "3",
+      ]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    links:
+      - mysql
+
+networks:
+  new:
